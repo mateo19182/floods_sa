@@ -1,6 +1,14 @@
 # floods_sa
 
-https://zindi.africa/competitions/inundata-mapping-floods-in-south-africa
+<https://zindi.africa/competitions/inundata-mapping-floods-in-south-africa>
+
+## Install and Run
+
+Install flax, pandas, numpy
+
+```bash
+python code/run.py
+```
 
 ## Submissions
 
@@ -12,5 +20,4 @@ https://zindi.africa/competitions/inundata-mapping-floods-in-south-africa
 
 ## Resources
 
-https://colab.research.google.com/drive/1K-J-GQ152cy1itTCCi7UC1ScfD6mx1Mu?usp=sharing#scrollTo=sR1MP7SdMwSV
-https://www.kaggle.com/code/muhammadqasimshabbir/inundata-mapping-floods-in-south-africa-stater/notebook
+Data: <https://zindi.africa/competitions/inundata-mapping-floods-in-south-africa/data>
