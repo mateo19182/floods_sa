@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from train import get_prediction
-from train import train_and_evaluate
+from train import get_prediction, load_model, train_and_evaluate
 from data import BASE_PATH
 import wandb
 from data import get_datasets
@@ -32,7 +31,7 @@ def create_submission(final_state, test_ds):
     print("Submission file created successfully at BenchmarkSubmission.csv")
 
 def main():
-    # Initialize wandb for logging
+    # # Initialize wandb for logging
     wandb.init(project="floods")
 
     train_ds, valid_ds, test_ds, seq_length = get_datasets(
@@ -41,14 +40,20 @@ def main():
 
     # Train and evaluate the model
     final_state, losses = train_and_evaluate(
-        num_epochs=150,
-        batch_size=64,
+        num_epochs=250,
+        batch_size=32,
+        # learning_rate=1e-3,
         use_images=True,
         train_ds=train_ds,
         valid_ds=valid_ds, 
         seq_length=seq_length
     )
 
+    # Load the best model
+    # _, _, test_ds, _ = get_datasets(
+    #      augment=False
+    # )
+    # final_state = load_model("/home/mateo/projects/ai/comps/floods_sa/code/checkpoints/best_f1_score")
 
     # Visualize validation set results
     # visualize_results(final_state, valid_ds['label'], losses)

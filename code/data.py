@@ -113,7 +113,6 @@ def get_datasets(augment=False):
     # Print detailed statistics
     print("\nData Distribution:")
     print("Total timesteps:", len(data))
-    print("Label distribution at timestep level:")
     print(data['label'].value_counts())
     
     print("\nSplit Statistics:")
