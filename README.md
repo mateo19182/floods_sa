@@ -10,7 +10,13 @@ Install flax, pandas, numpy
 python code/run.py
 ```
 
+## TODO
+
+- augmentations, still heavy imbalance
+
 ## Submissions
+
+0.006483697 on new bench with mods
 
 0.022605287 on all 0s
 

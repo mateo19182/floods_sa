@@ -17,7 +17,7 @@ def load_data():
     
     data['event_t'] = data.groupby('event_id').cumcount()
     data_test['event_t'] = data_test.groupby('event_id').cumcount()
-    
+        
     return data, data_test
 
 def load_images():
@@ -89,20 +89,40 @@ def prepare_images(data, data_test, images):
     test_images = np.stack(test_images, axis=0)
     
     return train_images, valid_images, test_images
-
-def get_datasets():
+def get_datasets(augment=False):
     data, data_test = load_data()
     images = load_images()
     
+    # Create train/valid split (90/10)
     event_ids = data['event_id'].unique()
+    train_size = int(0.9 * len(event_ids))
+    
+    # Simple random split of events
+    train_events = np.random.choice(event_ids, size=train_size, replace=False)
+    valid_events = np.setdiff1d(event_ids, train_events)
+    
     new_split = pd.Series(
-        data=np.random.choice(['train', 'valid'], size=len(event_ids), p=[0.9, 0.1]),
         index=event_ids,
-        name='split',
+        data='valid',
+        name='split'
     )
+    new_split[train_events] = 'train'
+    
     data_new = data.join(new_split, on='event_id')
-
-    print("Columns in data_new:", data_new.columns)
+    
+    # Print detailed statistics
+    print("\nData Distribution:")
+    print("Total timesteps:", len(data))
+    print("Label distribution at timestep level:")
+    print(data['label'].value_counts())
+    
+    print("\nSplit Statistics:")
+    train_labels_all = data[data['event_id'].isin(train_events)]['label']
+    valid_labels_all = data[data['event_id'].isin(valid_events)]['label']
+    
+    print(f"Train events: {len(train_events)}, Valid events: {len(valid_events)}")
+    print(f"Train timesteps - Label 0: {(train_labels_all==0).sum()}, Label 1: {(train_labels_all==1).sum()}")
+    print(f"Valid timesteps - Label 0: {(valid_labels_all==0).sum()}, Label 1: {(valid_labels_all==1).sum()}")
 
     train_df = data_new[(data_new['split'] == 'train')]
     train_timeseries = train_df.pivot(index='event_id', columns='event_t', values='precipitation').to_numpy()
@@ -114,6 +134,41 @@ def get_datasets():
 
     test_timeseries = data_test.pivot(index='event_id', columns='event_t', values='precipitation').to_numpy()
     train_images, valid_images, test_images = prepare_images(data_new, data_test, images)
+    
+    if augment:
+        # Get indices for flood events (any timestep has label 1)
+        flood_mask = train_labels.any(axis=1)
+        flood_indices = np.where(flood_mask)[0]
+        
+        # Select 3 flood events to augment
+        aug_indices = np.random.choice(flood_indices, size=3, replace=False)
+        
+        # Lists for augmented data
+        aug_images = [train_images]
+        aug_timeseries = [train_timeseries]
+        aug_labels = [train_labels]
+        
+        # Create rotated versions for selected samples
+        for idx in aug_indices:
+            # 90 degree rotation
+            aug_images.append(np.rot90(train_images[idx])[np.newaxis, ...])
+            aug_timeseries.append(train_timeseries[idx][np.newaxis, ...])
+            aug_labels.append(train_labels[idx][np.newaxis, ...])
+            
+            # 180 degree rotation
+            aug_images.append(np.rot90(train_images[idx], k=2)[np.newaxis, ...])
+            aug_timeseries.append(np.flip(train_timeseries[idx])[np.newaxis, ...])
+            aug_labels.append(train_labels[idx][np.newaxis, ...])
+        
+        # Combine original and augmented data
+        train_images = np.concatenate(aug_images, axis=0)
+        train_timeseries = np.concatenate(aug_timeseries, axis=0)
+        train_labels = np.concatenate(aug_labels, axis=0)
+        
+        # Print augmented stats
+        print("\nAfter augmentation:")
+        print(f"Total events: {len(train_labels), len(valid_labels)}")
+        print(f"Total positive timesteps: {np.sum(train_labels), np.sum(valid_labels)}")
     
     train_ds = {
         'timeseries': train_timeseries,

@@ -8,6 +8,7 @@ import wandb
 from data import get_datasets
 
 def sigmoid(x):
+    x = np.clip(x, -700, 700)
     return 1 / (1 + np.exp(-x))
 
 def visualize_results(final_state, valid_labels, losses):
@@ -28,32 +29,32 @@ def create_submission(final_state, test_ds):
     sample_submission = pd.read_csv(BASE_PATH + '/SampleSubmission.csv')
     sample_submission['label'] = probs.flatten()
     sample_submission.to_csv('BenchmarkSubmission.csv', index=False)
+    print("Submission file created successfully at BenchmarkSubmission.csv")
 
 def main():
     # Initialize wandb for logging
     wandb.init(project="floods")
 
-    # Hyperparameters
-    num_epochs = 150
-    batch_size = 64
-    use_images = True
+    train_ds, valid_ds, test_ds, seq_length = get_datasets(
+        augment=True
+    )
 
     # Train and evaluate the model
     final_state, losses = train_and_evaluate(
-        num_epochs=num_epochs,
-        batch_size=batch_size,
-        use_images=use_images,
+        num_epochs=150,
+        batch_size=64,
+        use_images=True,
+        train_ds=train_ds,
+        valid_ds=valid_ds, 
+        seq_length=seq_length
     )
 
-    # Get datasets for visualization and submission
-    _, _, test_ds, _ = get_datasets()
-    test_inputs = (test_ds['timeseries'], test_ds['image'])
 
     # Visualize validation set results
     # visualize_results(final_state, valid_ds['label'], losses)
 
     # Create submission file
-    create_submission(final_state, test_inputs)
+    create_submission(final_state, (test_ds['timeseries'], test_ds['image']))
 
 if __name__ == "__main__":
     main()

@@ -132,12 +132,12 @@ def create_train_state(rng, use_images: bool, train_timeseries_shape):
         tx=tx,
     )
 
-def train_and_evaluate(num_epochs: int, batch_size: int, use_images: bool):
-    train_ds, valid_ds, _, train_timeseries_shape = get_datasets()
+def train_and_evaluate(num_epochs: int, batch_size: int, use_images: bool, train_ds=None, valid_ds=None, seq_length=None):
+    # train_ds, valid_ds, _, train_timeseries_shape = get_datasets()
     rng = jax.random.key(0)
 
     rng, init_rng = jax.random.split(rng)
-    state = create_train_state(init_rng, use_images, train_timeseries_shape)
+    state = create_train_state(init_rng, use_images, seq_length)
 
     for epoch in range(1, num_epochs + 1):
         rng, input_rng = jax.random.split(rng)
