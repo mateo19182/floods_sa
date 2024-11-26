@@ -13,8 +13,11 @@ python code/run.py
 ## TODO
 
 - augmentations, still heavy imbalance
+- play with architecture
 
 ## Submissions
+
+0.005731114 data aug, also lower batch size seems slightly better
 
 0.006483697 on new bench with mods
 

@@ -132,23 +132,58 @@ def create_train_state(rng, use_images: bool, train_timeseries_shape):
         tx=tx,
     )
 
+def last_eval(best_state, valid_ds):
+    # Evaluate the best state on the validation set
+    valid_inputs = (valid_ds['timeseries'], valid_ds['image'])
+    _, _, best_valid_loss, best_valid_acc, best_valid_mad, best_valid_acc_kth, _ = apply_model(
+        best_state, valid_inputs, valid_ds['label'], is_training=False
+    )
+
+    # Print the metrics of the best state
+    print(
+        '\nBest State Metrics:\n'
+        'validation loss: %.4f valid_acc: %2f valid_mad: %2f valid_kth_acc: %2f'
+        % (
+            best_valid_loss,
+            best_valid_acc,
+            best_valid_mad,
+            best_valid_acc_kth,
+        )
+    )
+
 def train_and_evaluate(num_epochs: int, batch_size: int, use_images: bool, train_ds=None, valid_ds=None, seq_length=None):
-    # train_ds, valid_ds, _, train_timeseries_shape = get_datasets()
+    # Initialize random number generators
     rng = jax.random.key(0)
-
     rng, init_rng = jax.random.split(rng)
+    
+    # Initialize the model state
     state = create_train_state(init_rng, use_images, seq_length)
-
+    
+    # Variable to track the best state based on validation loss
+    best_state = state
+    best_valid_loss = float('inf')  # Set initial best validation loss to a large value
+    
+    # Training loop
     for epoch in range(1, num_epochs + 1):
         rng, input_rng = jax.random.split(rng)
+        
+        # Train for one epoch
         state, train_loss, train_acc, train_mad, train_acc_kth = train_epoch(
             state, train_ds, batch_size, input_rng
         )
+        
+        # Prepare validation inputs and apply model
         valid_inputs = (valid_ds['timeseries'], valid_ds['image'])
         _, _, valid_loss, valid_acc, valid_mad, valid_acc_kth, losses = apply_model(
             state, valid_inputs, valid_ds['label'], is_training=False
         )
-
+        
+        # Track the best state based on validation loss
+        if valid_loss < best_valid_loss:
+            best_valid_loss = valid_loss
+            best_state = state
+        
+        # Print and log results every 10 epochs or at the final epoch
         if epoch == 1 or epoch % 10 == 0 or epoch == num_epochs:
             print(
                 'epoch:% 3d \n'
@@ -177,12 +212,14 @@ def train_and_evaluate(num_epochs: int, batch_size: int, use_images: bool, train
                 "valid_accuracy_kth": valid_acc_kth,
             })
 
-    return state, losses
+    last_eval(best_state, valid_ds)
+    return best_state, losses
+
 
 if __name__ == "__main__":
     wandb.init(project="floods")
     final_state, losses = train_and_evaluate(
-        num_epochs=150,
-        batch_size=64,
+        num_epochs=200,
+        batch_size=16,
         use_images=True,
     )
